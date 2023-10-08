@@ -4,8 +4,9 @@ use rand::rngs::ThreadRng;
 use raylib::prelude::*;
 
 use crate::systems::{
-    collision_system, control_system, entity_render_system, guns_system, physics, physics_system,
-    spawn_asteroids_system, step_lifespan, step_lifespan_system,
+    capture_in_play_field_system, collision_system, control_system, entity_render_system,
+    guns_system, physics, physics_system, spawn_asteroids_system, step_lifespan,
+    step_lifespan_system, world_wrap_system,
 };
 
 pub const FRAMES_PER_SECOND: u32 = 60;
@@ -43,6 +44,9 @@ impl State {
             .add_system(step_lifespan_system())
             .add_system(spawn_asteroids_system())
             .add_system(physics_system())
+            .add_system(world_wrap_system())
+            .add_system(capture_in_play_field_system())
+            .flush()
             .add_system(entity_render_system())
             .build();
 

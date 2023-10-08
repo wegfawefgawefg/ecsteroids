@@ -7,9 +7,9 @@ pub type RenderCommandBuffer = Vec<DrawCommand>;
 #[derive(Clone)]
 pub enum DrawCommand {
     ClearScreen,
-    ColoredSquare { pos: UVec2, color: Color },
-    Ship { pos: UVec2, dir: Vec2 },
-    Asteroid { pos: UVec2, size: u32, dir: Vec2 },
+    ColoredSquare { pos: Vec2, color: Color },
+    Ship { pos: Vec2, dir: Vec2 },
+    Asteroid { pos: Vec2, size: u32, dir: Vec2 },
 }
 
 // defualt entity size
@@ -34,7 +34,7 @@ pub fn execute_render_command_buffer(
             }
             DrawCommand::Ship { pos, dir } => {
                 let ship_color = Color::new(0, 100, 255, 255);
-                let center = Vec2::new(pos.x as f32, pos.y as f32);
+                let center = Vec2::new(pos.x, pos.y);
                 let dir = dir.normalize();
                 let dir = dir * 10.0;
                 d.draw_circle_lines(center.x as i32, center.y as i32, 3.0, ship_color);
@@ -65,7 +65,7 @@ pub fn execute_render_command_buffer(
 
                     // Rotate the point around the asteroid's center using glam's Mat2
                     let rotation_matrix = glam::Mat2::from_angle(rot_angle);
-                    let rotated_point = rotation_matrix * point + pos.as_vec2();
+                    let rotated_point = rotation_matrix * point + *pos;
 
                     points.push(rotated_point);
                 }

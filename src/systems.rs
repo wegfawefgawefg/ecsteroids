@@ -1,9 +1,9 @@
 use std::thread::spawn;
 
 use glam::{UVec2, Vec2};
-use legion::systems::CommandBuffer;
 use legion::world::SubWorld;
 pub use legion::*;
+use legion::{storage::Component, systems::CommandBuffer};
 use rand::{
     rngs::{StdRng, ThreadRng},
     Rng,
@@ -11,7 +11,10 @@ use rand::{
 use raylib::prelude::{Color, Vector2};
 
 use crate::{
-    components::{Asteroid, Bullet, CTransform, Gun, InputControlled, LifeSpan, Physics, Player},
+    components::{
+        Asteroid, Bullet, CTransform, CaptureInPlayField, Gun, InputControlled, LifeSpan, Physics,
+        Player,
+    },
     rendering::{DrawCommand, RenderCommandBuffer},
     AsteroidSpawnTimer, DIMS,
 };
@@ -41,7 +44,7 @@ pub fn entity_render(
         .iter(ecs)
         .for_each(|(transform, asteroid)| {
             render_command_buffer.push(DrawCommand::Asteroid {
-                pos: transform.pos.as_uvec2(),
+                pos: transform.pos,
                 size: asteroid.size,
                 dir: transform.rot,
             });
@@ -53,7 +56,7 @@ pub fn entity_render(
         .iter(ecs)
         .for_each(|transform| {
             render_command_buffer.push(DrawCommand::ColoredSquare {
-                pos: transform.pos.as_uvec2(),
+                pos: transform.pos,
                 color: Color::new(255, rng.gen_range(10..255), 0, 255),
             });
         });
@@ -64,7 +67,7 @@ pub fn entity_render(
         .iter(ecs)
         .for_each(|transform| {
             render_command_buffer.push(DrawCommand::Ship {
-                pos: transform.pos.as_uvec2(),
+                pos: transform.pos,
                 dir: transform.rot,
             });
         });
@@ -77,6 +80,7 @@ const MAX_VEL: f32 = 1.0;
 #[write_component(Physics)]
 pub fn physics(ecs: &mut SubWorld) {
     let mut query = <(&mut CTransform, &mut Physics)>::query();
+
     for (ctransform, physics) in query.iter_mut(ecs) {
         if physics.vel.length() > MAX_VEL {
             physics.vel = physics.vel.normalize() * MAX_VEL;
@@ -85,8 +89,14 @@ pub fn physics(ecs: &mut SubWorld) {
 
         let rot_matrix = glam::Mat2::from_angle(physics.rot_vel.to_radians() * 0.1);
         ctransform.rot = rot_matrix * ctransform.rot;
+    }
+}
 
-        // loop around the screen
+#[system]
+#[write_component(CTransform)]
+pub fn world_wrap(ecs: &mut SubWorld) {
+    let mut query = <&mut CTransform>::query().filter(!component::<CaptureInPlayField>());
+    for ctransform in query.iter_mut(ecs) {
         if ctransform.pos.x < 0.0 {
             ctransform.pos.x += DIMS.x as f32;
         } else if ctransform.pos.x > DIMS.x as f32 {
@@ -96,6 +106,22 @@ pub fn physics(ecs: &mut SubWorld) {
             ctransform.pos.y += DIMS.y as f32;
         } else if ctransform.pos.y > DIMS.y as f32 {
             ctransform.pos.y -= DIMS.y as f32;
+        }
+    }
+}
+
+#[system]
+#[write_component(CTransform)]
+#[write_component(Physics)]
+pub fn capture_in_play_field(ecs: &mut SubWorld, cmd: &mut CommandBuffer) {
+    let mut query = <(Entity, &mut CTransform)>::query().filter(component::<CaptureInPlayField>());
+    for (entity, ctransform) in query.iter_mut(ecs) {
+        let is_in_play_field = ctransform.pos.x > 0.0
+            && ctransform.pos.x < DIMS.x as f32
+            && ctransform.pos.y > 0.0
+            && (ctransform.pos.y < DIMS.y as f32);
+        if is_in_play_field {
+            cmd.remove_component::<CaptureInPlayField>(*entity);
         }
     }
 }
@@ -189,10 +215,64 @@ pub fn spawn_asteroids(
     if asteroid_spawn_timer.countdown == 0 {
         asteroid_spawn_timer.countdown = asteroid_spawn_timer.spawn_interval;
 
-        let position = Vec2::new(
+        let size = rng.gen_range(10..30);
+        let padded_size = size as f32 * 2.0;
+
+        // position needs to be outside of the screen
+        // there are 8 zones, first pick a zone
+        let zone = rng.gen_range(0..1);
+        let position = match zone {
+            0 => Vec2::new(
+                // top left
+                rng.gen_range(-padded_size * 2.0..-padded_size),
+                rng.gen_range(-padded_size * 2.0..-padded_size),
+            ),
+            1 => Vec2::new(
+                // top right
+                rng.gen_range(DIMS.x as f32 + padded_size..DIMS.x as f32 + padded_size * 2.0),
+                rng.gen_range(-padded_size * 2.0..-padded_size),
+            ),
+            2 => Vec2::new(
+                // bottom right
+                rng.gen_range(DIMS.x as f32 + padded_size..DIMS.x as f32 + padded_size * 2.0),
+                rng.gen_range(DIMS.y as f32 + padded_size..DIMS.y as f32 + padded_size * 2.0),
+            ),
+            3 => Vec2::new(
+                // bottom left
+                rng.gen_range(-padded_size * 2.0..-padded_size),
+                rng.gen_range(DIMS.y as f32 + padded_size..DIMS.y as f32 + padded_size * 2.0),
+            ),
+            4 => Vec2::new(
+                // top
+                rng.gen_range(0.0..DIMS.x as f32),
+                rng.gen_range(-padded_size * 2.0..-padded_size),
+            ),
+            5 => Vec2::new(
+                // bottom
+                rng.gen_range(0.0..DIMS.x as f32),
+                rng.gen_range(DIMS.y as f32 + padded_size..DIMS.y as f32 + padded_size * 2.0),
+            ),
+            6 => Vec2::new(
+                // left
+                rng.gen_range(-padded_size * 2.0..-padded_size),
+                rng.gen_range(0.0..DIMS.y as f32),
+            ),
+            7 => Vec2::new(
+                // right
+                rng.gen_range(DIMS.x as f32 + padded_size..DIMS.x as f32 + padded_size * 2.0),
+                rng.gen_range(0.0..DIMS.y as f32),
+            ),
+            _ => panic!("Unexpected zone"), // This shouldn't happen with rng.gen_range(0..8)
+        };
+        println!("zone: {}, position: {:?}", zone, position);
+
+        let target_position = Vec2::new(
             rng.gen_range(0.0..DIMS.x as f32),
             rng.gen_range(0.0..DIMS.y as f32),
         );
+        let direction = (target_position - position).normalize();
+        let velocity = direction * rng.gen_range(0.5..1.0);
+
         let angle = rng.gen_range(0.0..360.0);
         let rotation = glam::Mat2::from_angle(angle) * Vec2::new(0.0, 1.0);
 
@@ -201,13 +281,12 @@ pub fn spawn_asteroids(
                 pos: position,
                 rot: rotation,
             },
-            Asteroid {
-                size: rng.gen_range(10..30),
-            },
+            Asteroid { size },
             Physics {
-                vel: Vec2::new(rng.gen_range(-0.5..0.5), rng.gen_range(-0.5..0.5)),
+                vel: velocity,
                 rot_vel: rng.gen_range(-0.01..0.01),
             },
+            CaptureInPlayField,
         ));
     }
 }

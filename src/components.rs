@@ -39,3 +39,5 @@ pub struct Physics {
     pub vel: Vec2,
     pub rot_vel: f32,
 }
+
+pub struct CaptureInPlayField;
