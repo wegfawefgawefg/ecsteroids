@@ -1,14 +1,20 @@
-use glam::{IVec2, UVec2};
-use rand::rngs::{StdRng, ThreadRng};
+use audio::Song;
+use glam::UVec2;
+use rand::rngs::StdRng;
 use rand::SeedableRng;
 use raylib::prelude::*;
 use raylib::{ffi::SetTraceLogLevel, prelude::TraceLogLevel};
 use rendering::RenderCommandBuffer;
+use state::GameMode;
 
+mod audio;
 mod components;
+mod game_over;
+mod playing;
 mod rendering;
-mod sketch;
+mod state;
 mod systems;
+mod title;
 
 pub struct AsteroidSpawnTimer {
     pub spawn_interval: u32, // frames
@@ -26,13 +32,19 @@ impl AsteroidSpawnTimer {
 
 const DIMS: UVec2 = UVec2::new(240, 160);
 
-const TIMESTEP: f32 = 1.0 / sketch::FRAMES_PER_SECOND as f32;
+const TIMESTEP: f32 = 1.0 / state::FRAMES_PER_SECOND as f32;
 fn main() {
-    let mut state = sketch::State::new();
+    let mut state = state::State::new();
+
     let (mut rl, mut rlt) = raylib::init().title("raylib-rs-lowres-template").build();
     unsafe {
         SetTraceLogLevel(TraceLogLevel::LOG_WARNING as i32);
     }
+
+    let mut audio = audio::Audio::new(&mut rl, &rlt);
+    audio
+        .rl_audio_device
+        .play_music_stream(&mut audio.songs[Song::Playing as usize]);
 
     let window_dims = UVec2::new(1280, 720);
     let fullscreen = false;
@@ -65,14 +77,29 @@ fn main() {
         .insert::<AsteroidSpawnTimer>(asteroid_spawn_timer);
 
     while state.running && !rl.window_should_close() {
-        sketch::process_events_and_input(&mut rl, &mut state);
-
         let dt = rl.get_frame_time();
         state.time_since_last_update += dt;
-        while state.time_since_last_update > TIMESTEP {
-            state.time_since_last_update -= TIMESTEP;
+        if state.time_since_last_update > TIMESTEP {
+            state.time_since_last_update = 0.0;
 
-            sketch::step(&mut rl, &mut rlt, &mut state);
+            match state.game_mode {
+                GameMode::Title => {
+                    title::process_events_and_input(&mut rl, &mut state);
+                    title::step(&mut rl, &mut rlt, &mut state);
+                }
+                GameMode::Playing => {
+                    playing::process_events_and_input(&mut rl, &mut state);
+                    playing::step(&mut rl, &mut rlt, &mut state);
+                }
+                GameMode::GameOver => {
+                    game_over::process_events_and_input(&mut rl, &mut state);
+                    game_over::step(&mut rl, &mut rlt, &mut state);
+                }
+            }
+
+            audio
+                .rl_audio_device
+                .update_music_stream(&mut audio.songs[Song::Playing as usize]);
         }
 
         let mut draw_handle = rl.begin_drawing(&rlt);
@@ -80,7 +107,18 @@ fn main() {
             let low_res_draw_handle =
                 &mut draw_handle.begin_texture_mode(&rlt, &mut render_texture);
             low_res_draw_handle.clear_background(Color::BLACK);
-            sketch::draw(&mut state, low_res_draw_handle);
+
+            match state.game_mode {
+                GameMode::Title => {
+                    title::draw(&state, low_res_draw_handle);
+                }
+                GameMode::Playing => {
+                    playing::draw(&state, low_res_draw_handle);
+                }
+                GameMode::GameOver => {
+                    game_over::draw(&state, low_res_draw_handle);
+                }
+            }
         }
         scale_and_blit_render_texture_to_window(
             &mut draw_handle,

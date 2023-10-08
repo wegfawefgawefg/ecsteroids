@@ -1,0 +1,35 @@
+music
+sounds
+score
+display lives
+game over state
+press to play state
+
+wasd controls
+
+expansion:
+    enemy ships:
+        basic flier
+        basic shooter
+        big bullet shooter
+        bonus:
+            swarmers
+
+
+    powerups:
+        bigger bullets - inf capped
+        shoot farther - inf 
+        faster shooting - inf
+        two streams
+        three streams
+        laser beam
+
+    pickups:
+        hp
+        immunity
+        life
+
+    passives:
+        hp up
+        speed up
+        flash

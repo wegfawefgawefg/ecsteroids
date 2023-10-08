@@ -11,12 +11,12 @@ use rand::{
 use raylib::prelude::{Color, Vector2};
 
 use crate::{
-    components::{Asteroid, Bullet, CTransform, InputControlled, LifeSpan, Physics, Player},
+    components::{Asteroid, Bullet, CTransform, Gun, InputControlled, LifeSpan, Physics, Player},
     rendering::{DrawCommand, RenderCommandBuffer},
     AsteroidSpawnTimer, DIMS,
 };
 
-use crate::sketch::Inputs;
+use crate::playing::PlayingInputs;
 
 // system to make all enemies go to player
 
@@ -105,9 +105,11 @@ const ACCELERATION: f32 = 0.04;
 #[system]
 #[read_component(CTransform)]
 #[write_component(Physics)]
-pub fn control(ecs: &mut SubWorld, #[resource] inputs: &Inputs) {
-    let mut query = <(&CTransform, &mut Physics)>::query().filter(component::<InputControlled>());
-    for (ctransform, physics) in query.iter_mut(ecs) {
+#[write_component(Gun)]
+pub fn control(ecs: &mut SubWorld, #[resource] inputs: &PlayingInputs) {
+    let mut query =
+        <(&CTransform, &mut Physics, &mut Gun)>::query().filter(component::<InputControlled>());
+    for (ctransform, physics, gun) in query.iter_mut(ecs) {
         // if left is true in inputs, rotate left
         if inputs.left {
             physics.rot_vel = -ROTATION_SPEED;
@@ -126,20 +128,23 @@ pub fn control(ecs: &mut SubWorld, #[resource] inputs: &Inputs) {
         if inputs.down {
             physics.vel -= ctransform.rot * ACCELERATION;
         }
+
+        gun.wants_to_shoot = inputs.shoot;
     }
 }
 
 const BULLET_VELOCITY: f32 = 100.0;
 #[system]
-#[write_component(CTransform)]
-pub fn spawn_bullets_on_shoot(
-    ecs: &mut SubWorld,
-    #[resource] inputs: &Inputs,
-    cmd: &mut CommandBuffer,
-) {
-    let mut query = <&CTransform>::query().filter(component::<Player>());
-    for ctransform in query.iter_mut(ecs) {
-        if inputs.shoot {
+#[read_component(CTransform)]
+#[write_component(Gun)]
+pub fn guns(ecs: &mut SubWorld, cmd: &mut CommandBuffer) {
+    let mut query = <(&CTransform, &mut Gun)>::query();
+    for (ctransform, gun) in query.iter_mut(ecs) {
+        if gun.cooldown > 0 {
+            gun.cooldown -= 1;
+        }
+
+        if gun.cooldown == 0 && gun.wants_to_shoot {
             cmd.push((
                 CTransform {
                     pos: ctransform.pos + ctransform.rot * 10.0,
@@ -152,6 +157,8 @@ pub fn spawn_bullets_on_shoot(
                 Bullet,
                 LifeSpan { frames_left: 60 },
             ));
+
+            gun.cooldown = gun.fire_delay;
         }
     }
 }
