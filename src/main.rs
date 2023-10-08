@@ -77,6 +77,18 @@ fn main() {
         .insert::<AsteroidSpawnTimer>(asteroid_spawn_timer);
 
     while state.running && !rl.window_should_close() {
+        match state.game_mode {
+            GameMode::Title => {
+                title::process_events_and_input(&mut rl, &mut state);
+            }
+            GameMode::Playing => {
+                playing::process_events_and_input(&mut rl, &mut state);
+            }
+            GameMode::GameOver => {
+                game_over::process_events_and_input(&mut rl, &mut state);
+            }
+        }
+
         let dt = rl.get_frame_time();
         state.time_since_last_update += dt;
         if state.time_since_last_update > TIMESTEP {
@@ -84,15 +96,12 @@ fn main() {
 
             match state.game_mode {
                 GameMode::Title => {
-                    title::process_events_and_input(&mut rl, &mut state);
                     title::step(&mut rl, &mut rlt, &mut state);
                 }
                 GameMode::Playing => {
-                    playing::process_events_and_input(&mut rl, &mut state);
                     playing::step(&mut rl, &mut rlt, &mut state);
                 }
                 GameMode::GameOver => {
-                    game_over::process_events_and_input(&mut rl, &mut state);
                     game_over::step(&mut rl, &mut rlt, &mut state);
                 }
             }

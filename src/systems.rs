@@ -221,8 +221,8 @@ pub fn collision(ecs: &mut SubWorld, cmd: &mut CommandBuffer, #[resource] rng: &
     let mut asteroids = <(Entity, &CTransform, &Asteroid)>::query();
 
     // Bullet and asteroid collision
-    for (bullet_entity, bullet_transform) in bullets.iter(ecs) {
-        for (asteroid_entity, asteroid_transform, asteroid) in asteroids.iter(ecs) {
+    for (asteroid_entity, asteroid_transform, asteroid) in asteroids.iter(ecs) {
+        for (bullet_entity, bullet_transform) in bullets.iter(ecs) {
             let distance = (bullet_transform.pos - asteroid_transform.pos).length();
             let asteroid_radius = asteroid.size as f32 * 0.8;
             if distance <= asteroid_radius {
@@ -267,7 +267,7 @@ fn split_asteroid(
     cmd: &mut CommandBuffer,
     rng: &mut StdRng,
 ) {
-    let half_size = asteroid.size / 2;
+    let new_size = asteroid.size / 2;
     for _ in 0..2 {
         let random_velocity = Vec2::new(rng.gen_range(-0.5..0.5), rng.gen_range(-0.5..0.5));
         cmd.push((
@@ -275,7 +275,7 @@ fn split_asteroid(
                 pos: transform.pos,
                 rot: transform.rot,
             },
-            Asteroid { size: half_size },
+            Asteroid { size: new_size },
             Physics {
                 vel: random_velocity,
                 rot_vel: rng.gen_range(-50.0..50.0),

@@ -4,6 +4,7 @@ use raylib::prelude::*;
 
 use crate::{
     components::{CTransform, Gun, InputControlled, Physics, Player},
+    playing::PlayingInputs,
     state::{GameMode, State},
     DIMS,
 };
@@ -15,6 +16,31 @@ pub fn process_events_and_input(rl: &mut RaylibHandle, state: &mut State) {
 
     if rl.is_key_pressed(raylib::consts::KeyboardKey::KEY_SPACE) {
         state.game_mode = GameMode::Playing;
+        state.resources.insert(PlayingInputs {
+            left: false,
+            right: false,
+            up: false,
+            down: false,
+            shoot: false,
+        });
+
+        state.ecs.push((
+            CTransform {
+                pos: Vec2::new(100.0, 100.0),
+                rot: Vec2::new(0.0, 1.0),
+            },
+            Physics {
+                vel: Vec2::new(1.0, 1.0),
+                rot_vel: 30.0,
+            },
+            InputControlled,
+            Player,
+            Gun {
+                wants_to_shoot: false,
+                fire_delay: 10,
+                cooldown: 0,
+            },
+        ));
     }
 }
 
