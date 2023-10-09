@@ -1,7 +1,7 @@
-use glam::{UVec2, Vec2};
+use glam::Vec2;
 pub use legion::*;
-use raylib::prelude::Color;
 
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct CTransform {
     pub pos: Vec2,
     pub rot: Vec2,
@@ -27,13 +27,11 @@ pub struct Asteroid {
 
 pub struct InputControlled;
 
-pub struct Sprite {
-    pub sample_pos: UVec2,
-}
-
-pub struct Health {
+pub struct _Health {
     pub hp: u32,
 }
+
+pub struct VelocityUncapped;
 
 pub struct Physics {
     pub vel: Vec2,
@@ -41,3 +39,18 @@ pub struct Physics {
 }
 
 pub struct CaptureInPlayField;
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Score {
+    pub owner: Entity,
+    pub score: u32,
+}
+
+pub struct OwnedBy {
+    pub owner: Entity,
+}
+
+pub struct AttachedTo {
+    pub entity: Entity,
+    pub offset: Vec2,
+}

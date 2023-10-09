@@ -1,16 +1,13 @@
-use glam::Vec2;
 pub use legion::*;
-use rand::rngs::ThreadRng;
-use raylib::prelude::*;
+use rand::{rngs::StdRng, SeedableRng};
 
-use crate::systems::{
-    capture_in_play_field_system, collision_system, control_system, entity_render_system,
-    guns_system, physics, physics_system, spawn_asteroids_system, step_lifespan,
-    step_lifespan_system, world_wrap_system,
+use crate::{
+    message_stream::ExpiringMessages, rendering::RenderCommandBuffer, schedules, AsteroidSpawnTimer,
 };
 
 pub const FRAMES_PER_SECOND: u32 = 60;
 
+#[derive(Clone, Copy)]
 pub enum GameMode {
     Title,
     Playing,
@@ -20,44 +17,43 @@ pub enum GameMode {
 pub struct State {
     pub running: bool,
     pub time_since_last_update: f32,
-    pub game_mode: GameMode,
 
     pub ecs: World,
     pub resources: Resources,
-    pub schedule: Schedule,
+    pub title_schedule: Schedule,
+    pub playing_schedule: Schedule,
 }
 
 impl State {
     pub fn new() -> Self {
-        let mut ecs = World::default();
+        //////////////////    INIT RESOURCES    //////////////////
+        let mut resources = Resources::default();
 
-        // spawn some entities that have Transform and a ccolor
-        // let mut rng: ThreadRng = rand::thread_rng();
+        let render_command_buffer: RenderCommandBuffer = RenderCommandBuffer::new();
+        resources.insert(render_command_buffer);
 
-        let resources = Resources::default();
-        let schedule = Schedule::builder()
-            .add_system(control_system())
-            .flush()
-            .add_system(guns_system())
-            .add_system(collision_system())
-            .flush()
-            .add_system(step_lifespan_system())
-            .add_system(spawn_asteroids_system())
-            .add_system(physics_system())
-            .add_system(world_wrap_system())
-            .add_system(capture_in_play_field_system())
-            .flush()
-            .add_system(entity_render_system())
-            .build();
+        let expiring_messages = ExpiringMessages::new();
+        resources.insert(expiring_messages);
+
+        let rng: StdRng = StdRng::from_entropy();
+        resources.insert(rng);
+
+        let asteroid_spawn_timer = AsteroidSpawnTimer::new(100);
+        resources.insert::<AsteroidSpawnTimer>(asteroid_spawn_timer);
+
+        let game_mode = GameMode::Title;
+        resources.insert(game_mode);
+        let transition_to: Option<GameMode> = None;
+        resources.insert(transition_to);
 
         Self {
             running: true,
             time_since_last_update: 0.0,
-            game_mode: GameMode::Title,
 
-            ecs,
+            ecs: World::default(),
             resources,
-            schedule,
+            title_schedule: schedules::build_title_schedule(),
+            playing_schedule: schedules::build_play_schedule(),
         }
     }
 }

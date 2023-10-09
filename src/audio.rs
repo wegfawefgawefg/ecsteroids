@@ -1,7 +1,6 @@
 use raylib::prelude::*;
 use raylib::{prelude::RaylibAudio, RaylibHandle, RaylibThread};
 
-use raylib::prelude::*;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -56,18 +55,18 @@ impl Audio {
         }
     }
 
-    pub fn play_sound_effect(&mut self, sound_effect: SoundEffect) {
-        let sound_effect = &mut self.sounds[sound_effect as usize];
-        self.rl_audio_device.play_sound(sound_effect);
-    }
+    // pub fn play_sound_effect(&mut self, sound_effect: SoundEffect) {
+    //     let sound_effect = &mut self.sounds[sound_effect as usize];
+    //     self.rl_audio_device.play_sound(sound_effect);
+    // }
 
-    pub fn set_sound_volumes(&mut self) {
-        for sound_effect in SoundEffect::iter() {
-            let sound_effect = &mut self.sounds[sound_effect as usize];
-            self.rl_audio_device
-                .set_sound_volume(sound_effect, self.sound_effects_volume);
-        }
-    }
+    // pub fn set_sound_volumes(&mut self) {
+    //     for sound_effect in SoundEffect::iter() {
+    //         let sound_effect = &mut self.sounds[sound_effect as usize];
+    //         self.rl_audio_device
+    //             .set_sound_volume(sound_effect, self.sound_effects_volume);
+    //     }
+    // }
 }
 
 pub fn get_sound_file_name(sound_effect: SoundEffect) -> &'static str {

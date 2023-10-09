@@ -3,50 +3,37 @@ pub use legion::*;
 use raylib::prelude::*;
 
 use crate::{
-    components::{CTransform, Gun, InputControlled, Physics, Player},
-    playing::PlayingInputs,
     state::{GameMode, State},
     DIMS,
 };
+
+pub struct TitleInputs {
+    pub confirm: bool,
+}
 
 pub fn process_events_and_input(rl: &mut RaylibHandle, state: &mut State) {
     if rl.is_key_pressed(raylib::consts::KeyboardKey::KEY_ESCAPE) {
         state.running = false;
     }
-
+    let mut title_inputs = TitleInputs { confirm: false };
     if rl.is_key_pressed(raylib::consts::KeyboardKey::KEY_SPACE) {
-        state.game_mode = GameMode::Playing;
-        state.resources.insert(PlayingInputs {
-            left: false,
-            right: false,
-            up: false,
-            down: false,
-            shoot: false,
-        });
+        title_inputs.confirm = true;
 
-        state.ecs.push((
-            CTransform {
-                pos: Vec2::new(100.0, 100.0),
-                rot: Vec2::new(0.0, 1.0),
-            },
-            Physics {
-                vel: Vec2::new(1.0, 1.0),
-                rot_vel: 30.0,
-            },
-            InputControlled,
-            Player,
-            Gun {
-                wants_to_shoot: false,
-                fire_delay: 10,
-                cooldown: 0,
-            },
-        ));
+        if let Some(mut transition_to) = state.resources.get_mut::<Option<GameMode>>() {
+            *transition_to = Option::Some(GameMode::Playing);
+        }
     }
+
+    state.resources.insert(title_inputs);
 }
 
-pub fn step(rl: &mut RaylibHandle, rlt: &mut RaylibThread, state: &mut State) {}
+pub fn step(_rl: &mut RaylibHandle, state: &mut State) {
+    state
+        .title_schedule
+        .execute(&mut state.ecs, &mut state.resources);
+}
 
-pub fn draw(state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>) {
+pub fn draw(_state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>) {
     // draw the title screen
     // name is ecsstroids
 

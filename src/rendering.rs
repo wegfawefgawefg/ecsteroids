@@ -1,15 +1,38 @@
-use glam::{UVec2, Vec2};
-use rand::Rng;
-use raylib::prelude::{Color, RaylibDraw, RaylibDrawHandle, RaylibTextureMode, Vector2};
+use glam::Vec2;
+use raylib::prelude::{Color, RaylibDraw, RaylibDrawHandle, RaylibTextureMode, Vector2, PI};
 
 pub type RenderCommandBuffer = Vec<DrawCommand>;
 
 #[derive(Clone)]
 pub enum DrawCommand {
-    ClearScreen,
-    ColoredSquare { pos: Vec2, color: Color },
-    Ship { pos: Vec2, dir: Vec2 },
-    Asteroid { pos: Vec2, size: u32, dir: Vec2 },
+    ColoredSquare {
+        pos: Vec2,
+        color: Color,
+    },
+    Ship {
+        pos: Vec2,
+        dir: Vec2,
+    },
+    Asteroid {
+        pos: Vec2,
+        size: u32,
+        dir: Vec2,
+    },
+    Text {
+        pos: Vec2,
+        text: String,
+        size: i32,
+        color: Color,
+    },
+    Gun {
+        pos: Vec2,
+        dir: Vec2,
+    },
+    Line {
+        start: Vec2,
+        end: Vec2,
+        color: Color,
+    },
 }
 
 // defualt entity size
@@ -23,12 +46,8 @@ pub fn execute_render_command_buffer(
     d: &mut RaylibTextureMode<RaylibDrawHandle>,
     render_command_buffer: &mut RenderCommandBuffer,
 ) {
-    let mut rng = rand::thread_rng();
     for command in render_command_buffer.iter() {
         match command {
-            DrawCommand::ClearScreen => {
-                d.clear_background(Color::WHITE);
-            }
             DrawCommand::ColoredSquare { pos, color } => {
                 d.draw_rectangle(pos.x as i32, pos.y as i32, SIZE, SIZE, *color);
             }
@@ -54,9 +73,9 @@ pub fn execute_render_command_buffer(
                 let rot_angle = dir.y.atan2(dir.x);
 
                 // Generate points for the asteroid using the static radius variations
-                for i in 0..SEGMENTS {
+                for (i, segment) in RADIUS_VARIATIONS.iter().enumerate() {
                     let angle = base_angle * i as f32;
-                    let r = *size as f32 * RADIUS_VARIATIONS[i];
+                    let r = *size as f32 * segment;
 
                     let point = Vec2 {
                         x: r * angle.cos(),
@@ -89,6 +108,55 @@ pub fn execute_render_command_buffer(
                 }
 
                 // also draw a debug circle at the center of the asteroid
+            }
+            DrawCommand::Text {
+                pos,
+                text,
+                size,
+                color,
+            } => {
+                d.draw_text(text, pos.x as i32, pos.y as i32, *size, *color);
+            }
+            DrawCommand::Gun { pos, dir } => {
+                let scale = 0.5;
+                let base_width = 10.0 * scale; // width of the triangle base
+                let length = 5.0 * scale; // length of the triangle (from tip to base)
+
+                // Convert the direction vector into an angle for rotation
+                let rot_angle = dir.y.atan2(dir.x) + std::f32::consts::FRAC_PI_2;
+
+                // Define the vertices of the triangle representing the gun
+                let tip = Vec2::new(0.0, -length / 2.0);
+                let base1 = Vec2::new(-base_width / 2.0, length / 2.0);
+                let base2 = Vec2::new(base_width / 2.0, length / 2.0);
+
+                // Rotate these points based on the 'dir' direction using glam's Mat2
+                let rotation_matrix = glam::Mat2::from_angle(rot_angle);
+
+                let tip = rotation_matrix * tip + *pos;
+                let base1 = rotation_matrix * base1 + *pos;
+                let base2 = rotation_matrix * base2 + *pos;
+
+                // Draw the triangle for the gun using raylib's draw_triangle function
+                d.draw_triangle(
+                    Vector2 { x: tip.x, y: tip.y },
+                    Vector2 {
+                        x: base1.x,
+                        y: base1.y,
+                    },
+                    Vector2 {
+                        x: base2.x,
+                        y: base2.y,
+                    },
+                    Color::WHITE,
+                );
+            }
+            DrawCommand::Line { start, end, color } => {
+                d.draw_line_v(
+                    Vector2::new(start.x, start.y),
+                    Vector2::new(end.x, end.y),
+                    *color,
+                );
             }
         }
     }
