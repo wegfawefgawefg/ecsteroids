@@ -12,6 +12,7 @@ pub enum Song {
 pub enum SoundEffect {
     Confirm,
     SuperConfirm,
+    SmallLaser,
 }
 
 pub struct Audio {
@@ -73,5 +74,6 @@ pub fn get_sound_file_name(sound_effect: SoundEffect) -> &'static str {
     match sound_effect {
         SoundEffect::Confirm => "confirm",
         SoundEffect::SuperConfirm => "super_confirm",
+        SoundEffect::SmallLaser => "small_laser",
     }
 }

@@ -2,6 +2,7 @@ pub use legion::*;
 use rand::{rngs::StdRng, SeedableRng};
 
 use crate::{
+    audio_playing::AudioCommandBuffer,
     message_stream::ExpiringMessages,
     rendering::RenderCommandBuffer,
     schedules,
@@ -34,6 +35,9 @@ impl State {
 
         let render_command_buffer: RenderCommandBuffer = RenderCommandBuffer::new();
         resources.insert(render_command_buffer);
+
+        let audio_command_buffer: AudioCommandBuffer = AudioCommandBuffer::new();
+        resources.insert(audio_command_buffer);
 
         let expiring_messages = ExpiringMessages::new();
         resources.insert(expiring_messages);

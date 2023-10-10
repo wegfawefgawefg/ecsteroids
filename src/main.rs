@@ -1,13 +1,14 @@
 use audio::Song;
+use audio_playing::{execute_audio_command_buffer, AudioCommandBuffer};
 use glam::UVec2;
 use raylib::prelude::*;
 use raylib::{ffi::SetTraceLogLevel, prelude::TraceLogLevel};
 use rendering::RenderCommandBuffer;
 use state::GameMode;
-use systems::playing::state_changing::game_over;
 use window_helpers::{center_window, scale_and_blit_render_texture_to_window};
 
 mod audio;
+mod audio_playing;
 mod components;
 mod game_over;
 mod message_stream;
@@ -110,6 +111,11 @@ fn main() {
                 render_command_buffer.clear();
             }
 
+            if let Some(mut audio_command_buffer) = state.resources.get_mut::<AudioCommandBuffer>()
+            {
+                audio_command_buffer.clear();
+            }
+
             match game_mode {
                 GameMode::Title => {
                     title::step(&mut rl, &mut state);
@@ -121,13 +127,18 @@ fn main() {
                     playing::step(&mut rl, &mut state);
                 }
             }
-
-            // UNMUTE THIS TO HEAR THE MUSIC
-            // audio
-            //     .rl_audio_device
-            //     .update_music_stream(&mut audio.songs[Song::Playing as usize]);
         }
 
+        ////////////////    AUDIO STEP  ////////////////
+        if let Some(mut audio_command_buffer) = state.resources.get_mut::<AudioCommandBuffer>() {
+            execute_audio_command_buffer(&mut rl, &mut audio, &mut audio_command_buffer);
+        }
+
+        audio // UNMUTE THIS TO HEAR THE MUSIC
+            .rl_audio_device
+            .update_music_stream(&mut audio.songs[Song::Playing as usize]);
+
+        ////////////////    DRAWING  ////////////////
         let mut draw_handle = rl.begin_drawing(&rlt);
         {
             let low_res_draw_handle =

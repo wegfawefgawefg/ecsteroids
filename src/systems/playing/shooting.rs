@@ -1,14 +1,21 @@
 pub use legion::*;
 use legion::{systems::CommandBuffer, world::SubWorld};
 
-use crate::components::{Bullet, CTransform, Gun, LifeSpan, OwnedBy, Physics, VelocityUncapped};
+use crate::{
+    audio_playing::{AudioCommand, AudioCommandBuffer},
+    components::{Bullet, CTransform, Gun, LifeSpan, OwnedBy, Physics, VelocityUncapped},
+};
 
 const BULLET_VELOCITY: f32 = 100.0;
 #[system]
 #[read_component(CTransform)]
 #[write_component(Gun)]
 #[read_component(OwnedBy)]
-pub fn guns(ecs: &mut SubWorld, cmd: &mut CommandBuffer) {
+pub fn guns(
+    ecs: &mut SubWorld,
+    #[resource] audio_command_buffer: &mut AudioCommandBuffer,
+    cmd: &mut CommandBuffer,
+) {
     let mut query = <(&CTransform, &mut Gun, &OwnedBy)>::query();
     for (ctransform, gun, owned_by) in query.iter_mut(ecs) {
         if gun.cooldown > 0 {
@@ -34,6 +41,8 @@ pub fn guns(ecs: &mut SubWorld, cmd: &mut CommandBuffer) {
             ));
 
             gun.cooldown = gun.fire_delay;
+
+            audio_command_buffer.push(AudioCommand::Shoot);
         }
     }
 }
