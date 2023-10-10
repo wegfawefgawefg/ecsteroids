@@ -5,7 +5,7 @@ use rand::{rngs::StdRng, Rng};
 use raylib::prelude::Color;
 
 use crate::{
-    components::{Asteroid, AttachedTo, Bullet, CTransform, Gun, Player, Score},
+    components::{Asteroid, AttachedTo, Bullet, CTransform, GrabZone, Gun, Player, Score},
     message_stream::ExpiringMessages,
     rendering::{DrawCommand, RenderCommandBuffer},
     DIMS,
@@ -15,6 +15,7 @@ use crate::{
 #[read_component(CTransform)]
 #[read_component(Asteroid)]
 #[read_component(AttachedTo)]
+#[read_component(GrabZone)]
 pub fn entity_render(
     ecs: &SubWorld,
     #[resource] rng: &mut StdRng,
@@ -118,6 +119,17 @@ pub fn entity_render(
             }
         }
     }
+
+    // render GrabZones
+    <(&CTransform, &GrabZone)>::query()
+        .iter(ecs)
+        .for_each(|(transform, grabzone)| {
+            render_command_buffer.push(DrawCommand::Circle {
+                pos: transform.pos,
+                radius: grabzone.radius,
+                color: Color::new(0, 0, 255, 100),
+            })
+        });
 }
 
 // render system

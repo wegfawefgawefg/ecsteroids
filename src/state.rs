@@ -2,7 +2,10 @@ pub use legion::*;
 use rand::{rngs::StdRng, SeedableRng};
 
 use crate::{
-    message_stream::ExpiringMessages, rendering::RenderCommandBuffer, schedules, AsteroidSpawnTimer,
+    message_stream::ExpiringMessages,
+    rendering::RenderCommandBuffer,
+    schedules,
+    timer::{AsteroidSpawnTimer, GunSpawnTimer},
 };
 
 pub const FRAMES_PER_SECOND: u32 = 60;
@@ -40,6 +43,9 @@ impl State {
 
         let asteroid_spawn_timer = AsteroidSpawnTimer::new(100);
         resources.insert::<AsteroidSpawnTimer>(asteroid_spawn_timer);
+
+        let gun_spawn_timer = GunSpawnTimer::new(100);
+        resources.insert::<GunSpawnTimer>(gun_spawn_timer);
 
         let game_mode = GameMode::Title;
         resources.insert(game_mode);

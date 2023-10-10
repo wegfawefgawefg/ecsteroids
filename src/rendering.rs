@@ -33,6 +33,11 @@ pub enum DrawCommand {
         end: Vec2,
         color: Color,
     },
+    Circle {
+        pos: Vec2,
+        radius: f32,
+        color: Color,
+    },
 }
 
 // defualt entity size
@@ -157,6 +162,9 @@ pub fn execute_render_command_buffer(
                     Vector2::new(end.x, end.y),
                     *color,
                 );
+            }
+            DrawCommand::Circle { pos, radius, color } => {
+                d.draw_circle(pos.x as i32, pos.y as i32, *radius, *color);
             }
         }
     }

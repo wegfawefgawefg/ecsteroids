@@ -16,22 +16,9 @@ mod rendering;
 mod schedules;
 mod state;
 mod systems;
+mod timer;
 mod title;
 mod window_helpers;
-
-pub struct AsteroidSpawnTimer {
-    pub spawn_interval: u32, // frames
-    pub countdown: u32,
-}
-
-impl AsteroidSpawnTimer {
-    pub fn new(spawn_interval: u32) -> Self {
-        Self {
-            spawn_interval,
-            countdown: spawn_interval,
-        }
-    }
-}
 
 const DIMS: UVec2 = UVec2::new(240, 160);
 
@@ -135,9 +122,10 @@ fn main() {
                 }
             }
 
-            audio
-                .rl_audio_device
-                .update_music_stream(&mut audio.songs[Song::Playing as usize]);
+            // UNMUTE THIS TO HEAR THE MUSIC
+            // audio
+            //     .rl_audio_device
+            //     .update_music_stream(&mut audio.songs[Song::Playing as usize]);
         }
 
         let mut draw_handle = rl.begin_drawing(&rlt);

@@ -3,7 +3,10 @@ pub use legion::*;
 use legion::{systems::CommandBuffer, world::SubWorld};
 use rand::{rngs::StdRng, Rng};
 
-use crate::components::{Asteroid, Bullet, CTransform, OwnedBy, Physics, Player, Score};
+use crate::components::{
+    Asteroid, Attachable, AttachedTo, Bullet, CTransform, GrabZone, InputControlled, OwnedBy,
+    Physics, Player, Score,
+};
 
 pub struct ScoreInstance {
     pub owner: Entity,
@@ -131,6 +134,80 @@ pub fn collision(ecs: &mut SubWorld, cmd: &mut CommandBuffer, #[resource] rng: &
     //         }
     //     }
     // }
+}
+
+/*
+- attachables are floating around
+- they stick to something that is a attach_piece
+    - upon sticking they become attached to the attach_piece, and if the attach_piece has an owner, adopt the attach_pieces owner
+
+- attach_piece propogation
+
+    - if a attach_piece becomes detached,
+        - removes its owned by
+        - removes its attached to, (this will need to trigger on attach_pieces on attach_pieces)
+        - anything attached to this attach_piece will also need remove owned_by
+
+    - if a attach_piece becomes attached,
+        - become owned by attacher
+        - become attached_to
+        - anything attached to this attach_piece will also need to get owned_by set
+
+*/
+#[system]
+#[write_component(CTransform)]
+#[read_component(Physics)]
+#[read_component(GrabZone)]
+#[read_component(Attachable)]
+pub fn attach_to_grab_zone(ecs: &mut SubWorld, cmd: &mut CommandBuffer) {
+    // 1. Fetch all attachable entities
+    // let unattached_attachables: Vec<(Entity, CTransform)> =
+    //     <(Entity, &CTransform, &Attachable)>::query()
+    //         .filter(!component::<AttachedTo>()) // 2. Filter out attached entities
+    //         .iter(ecs)
+    //         .map(|(entity, transform, _)| (*entity, *transform))
+    //         .collect();
+
+    // 3. Fetch all grab zones
+    let grab_zone_entities: Vec<(Entity, CTransform, GrabZone)> =
+        <(Entity, &CTransform, &GrabZone)>::query()
+            .iter(ecs)
+            .map(|(entity, transform, grabzone)| (*entity, *transform, *grabzone))
+            .collect();
+
+    let mut unattached_attachables =
+        <(Entity, &CTransform, &Attachable)>::query().filter(!component::<AttachedTo>());
+    for (attachable_entity, attachable_transform, _) in unattached_attachables.iter_mut(ecs) {
+        for (grab_entity, grab_transform, grab_zone) in grab_zone_entities.iter() {
+            let offset = attachable_transform.pos - grab_transform.pos;
+            let distance = offset.length();
+            if distance <= grab_zone.radius {
+                // This computes the matrix to rotate by -theta if rot represents rotation by theta.
+                // let inverse_rotation_matrix = glam::Mat2::from_cols(
+                //     grab_transform.rot,
+                //     Vec2::new(grab_transform.rot.y, grab_transform.rot.x),
+                // );
+                let rot_angle = grab_transform.rot.x.atan2(grab_transform.rot.y);
+                let rot_matrix = glam::Mat2::from_angle(rot_angle - std::f32::consts::FRAC_PI_2);
+                let rot_offset = rot_matrix * offset;
+
+                let attached = AttachedTo {
+                    entity: *grab_entity,
+                    offset: rot_offset,
+                };
+
+                cmd.add_component(*attachable_entity, attached);
+                cmd.add_component(*attachable_entity, InputControlled);
+                cmd.add_component(
+                    *attachable_entity,
+                    OwnedBy {
+                        owner: *grab_entity,
+                    },
+                );
+                break; // break out of the inner loop, as it's already attached
+            }
+        }
+    }
 }
 
 fn split_asteroid(

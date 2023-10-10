@@ -54,3 +54,10 @@ pub struct AttachedTo {
     pub entity: Entity,
     pub offset: Vec2,
 }
+
+#[derive(Clone, Copy)]
+pub struct GrabZone {
+    pub radius: f32,
+}
+
+pub struct Attachable;
