@@ -3,9 +3,12 @@ pub use legion::*;
 use legion::{systems::CommandBuffer, world::SubWorld};
 use rand::{rngs::StdRng, Rng};
 
-use crate::components::{
-    Asteroid, Attachable, AttachedTo, Bullet, CTransform, GrabZone, InputControlled, OwnedBy,
-    Physics, Player, Score,
+use crate::{
+    audio_playing::{AudioCommand, AudioCommandBuffer},
+    components::{
+        Asteroid, Attachable, AttachedTo, Bullet, CTransform, GrabZone, InputControlled, OwnedBy,
+        Physics, Player, Score,
+    },
 };
 
 pub struct ScoreInstance {
@@ -20,7 +23,12 @@ pub struct ScoreInstance {
 #[write_component(OwnedBy)]
 #[read_component(Score)]
 #[write_component(Score)]
-pub fn collision(ecs: &mut SubWorld, cmd: &mut CommandBuffer, #[resource] rng: &mut StdRng) {
+pub fn collision(
+    ecs: &mut SubWorld,
+    cmd: &mut CommandBuffer,
+    #[resource] audio_command_buffer: &mut AudioCommandBuffer,
+    #[resource] rng: &mut StdRng,
+) {
     let mut score_instances: Vec<ScoreInstance> = Vec::new();
 
     let mut bullets = <(Entity, &CTransform)>::query().filter(component::<Bullet>());
@@ -64,6 +72,8 @@ pub fn collision(ecs: &mut SubWorld, cmd: &mut CommandBuffer, #[resource] rng: &
                 } else {
                     println!("Failed to get entry for bullet: {:?}", bullet_entity);
                 }
+
+                audio_command_buffer.push(AudioCommand::AsteroidExplosion);
             }
         }
     }
