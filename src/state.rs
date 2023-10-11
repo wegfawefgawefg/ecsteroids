@@ -48,7 +48,7 @@ impl State {
         let asteroid_spawn_timer = AsteroidSpawnTimer::new(500, 0);
         resources.insert::<AsteroidSpawnTimer>(asteroid_spawn_timer);
 
-        let gun_spawn_timer = GunSpawnTimer::new(300, 0);
+        let gun_spawn_timer = GunSpawnTimer::new(100, 0);
         resources.insert::<GunSpawnTimer>(gun_spawn_timer);
 
         let enemy_spawn_timer = EnemySpawnTimer::new(2000, 0);
