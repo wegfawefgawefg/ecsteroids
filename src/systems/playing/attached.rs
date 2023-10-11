@@ -1,6 +1,6 @@
 use glam::Vec2;
 pub use legion::*;
-use legion::{system, world::SubWorld};
+use legion::{system, systems::CommandBuffer, world::SubWorld};
 
 use crate::components::{AttachedTo, CTransform, Physics};
 
@@ -34,6 +34,17 @@ pub fn stick_to_attached(ecs: &mut SubWorld) {
                 ctransform.pos = new_ctransform.pos + rotated_offset;
                 ctransform.rot = new_ctransform.rot.normalize();
             }
+        }
+    }
+}
+
+#[system]
+#[read_component(Entity)]
+#[read_component(AttachedTo)]
+pub fn check_attached_to_null(ecs: &mut SubWorld, cmd: &mut CommandBuffer) {
+    for (entity, owned_by) in <(Entity, &AttachedTo)>::query().iter(ecs) {
+        if ecs.entry_ref(owned_by.entity).is_err() {
+            cmd.remove_component::<AttachedTo>(*entity);
         }
     }
 }

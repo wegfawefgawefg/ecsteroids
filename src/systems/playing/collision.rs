@@ -6,8 +6,8 @@ use rand::{rngs::StdRng, Rng};
 use crate::{
     audio_playing::{AudioCommand, AudioCommandBuffer},
     components::{
-        Asteroid, Attachable, AttachedTo, Bullet, CTransform, GrabZone, InputControlled, OwnedBy,
-        Physics, Player, Score,
+        Asteroid, Attachable, AttachedTo, Bullet, CTransform, Enemy, GrabZone, InputControlled,
+        OwnedBy, Physics, Player, Score,
     },
 };
 
@@ -97,10 +97,11 @@ pub fn collision(
         }
     }
 
-    let mut dead_players: Vec<Entity> = Vec::new();
+    let mut dead_ships: Vec<Entity> = Vec::new();
 
     // asteroid and player collision
-    let mut players = <(Entity, &CTransform)>::query().filter(component::<Player>());
+    let mut players =
+        <(Entity, &CTransform)>::query().filter(component::<Player>() | component::<Enemy>());
     for (player_entity, player_transform) in players.iter(ecs) {
         for (asteroid_entity, asteroid_transform, asteroid) in asteroids.iter(ecs) {
             let distance = (player_transform.pos - asteroid_transform.pos).length();
@@ -108,7 +109,7 @@ pub fn collision(
             if distance <= combined_radius {
                 cmd.remove(*asteroid_entity);
                 cmd.remove(*player_entity);
-                dead_players.push(*player_entity);
+                dead_ships.push(*player_entity);
             }
         }
     }
