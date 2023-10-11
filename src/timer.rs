@@ -4,10 +4,10 @@ pub struct Timer {
 }
 
 impl Timer {
-    pub fn new(interval: u32) -> Self {
+    pub fn new(interval: u32, initial_countdown: u32) -> Self {
         Self {
             interval,
-            countdown: interval,
+            countdown: initial_countdown,
         }
     }
 }
@@ -17,9 +17,9 @@ pub struct TypedTimer<T> {
     _marker: std::marker::PhantomData<T>,
 }
 impl<T> TypedTimer<T> {
-    pub fn new(spawn_interval: u32) -> Self {
+    pub fn new(spawn_interval: u32, initial_countdown: u32) -> Self {
         Self {
-            timer: Timer::new(spawn_interval),
+            timer: Timer::new(spawn_interval, initial_countdown),
             _marker: std::marker::PhantomData,
         }
     }
@@ -38,5 +38,7 @@ impl<T> TypedTimer<T> {
 }
 pub struct ForAsteroidSpawning;
 pub struct ForGunSpawning;
+pub struct ForEnemySpawning;
 pub type AsteroidSpawnTimer = TypedTimer<ForAsteroidSpawning>;
 pub type GunSpawnTimer = TypedTimer<ForGunSpawning>;
+pub type EnemySpawnTimer = TypedTimer<ForEnemySpawning>;

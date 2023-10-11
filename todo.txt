@@ -33,3 +33,8 @@ expansion:
         hp up
         speed up
         flash
+
+
+BUGS:
+theres a bug with attachment. when something attaches, if the offset is huge, it jumps to 0,0 permanently, 
+i suspect directions are being non normalized somehow. this is making the bug

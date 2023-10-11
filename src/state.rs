@@ -6,7 +6,7 @@ use crate::{
     message_stream::ExpiringMessages,
     rendering::RenderCommandBuffer,
     schedules,
-    timer::{AsteroidSpawnTimer, GunSpawnTimer},
+    timer::{AsteroidSpawnTimer, EnemySpawnTimer, GunSpawnTimer},
 };
 
 pub const FRAMES_PER_SECOND: u32 = 60;
@@ -45,11 +45,14 @@ impl State {
         let rng: StdRng = StdRng::from_entropy();
         resources.insert(rng);
 
-        let asteroid_spawn_timer = AsteroidSpawnTimer::new(100);
+        let asteroid_spawn_timer = AsteroidSpawnTimer::new(1000, 100);
         resources.insert::<AsteroidSpawnTimer>(asteroid_spawn_timer);
 
-        let gun_spawn_timer = GunSpawnTimer::new(100);
+        let gun_spawn_timer = GunSpawnTimer::new(10, 1);
         resources.insert::<GunSpawnTimer>(gun_spawn_timer);
+
+        let enemy_spawn_timer = EnemySpawnTimer::new(100000, 0);
+        resources.insert::<EnemySpawnTimer>(enemy_spawn_timer);
 
         let game_mode = GameMode::Title;
         resources.insert(game_mode);

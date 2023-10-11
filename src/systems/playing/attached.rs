@@ -32,7 +32,7 @@ pub fn stick_to_attached(ecs: &mut SubWorld) {
                 let rotation_matrix = glam::Mat2::from_angle(rot_angle);
                 let rotated_offset = rotation_matrix * offset;
                 ctransform.pos = new_ctransform.pos + rotated_offset;
-                ctransform.rot = new_ctransform.rot;
+                ctransform.rot = new_ctransform.rot.normalize();
             }
         }
     }

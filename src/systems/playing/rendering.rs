@@ -5,7 +5,9 @@ use rand::{rngs::StdRng, Rng};
 use raylib::prelude::Color;
 
 use crate::{
-    components::{Asteroid, AttachedTo, Bullet, CTransform, GrabZone, Gun, Player, Score},
+    components::{
+        Asteroid, AttachedTo, Bullet, CTransform, Enemy, GrabZone, Gun, Player, Score, WantsToGoTo,
+    },
     message_stream::ExpiringMessages,
     rendering::{DrawCommand, RenderCommandBuffer},
     DIMS,
@@ -16,11 +18,34 @@ use crate::{
 #[read_component(Asteroid)]
 #[read_component(AttachedTo)]
 #[read_component(GrabZone)]
+#[read_component(WantsToGoTo)]
 pub fn entity_render(
     ecs: &SubWorld,
     #[resource] rng: &mut StdRng,
     #[resource] render_command_buffer: &mut RenderCommandBuffer,
 ) {
+    // render GrabZones
+    <(&CTransform, &GrabZone)>::query()
+        .iter(ecs)
+        .for_each(|(transform, grabzone)| {
+            render_command_buffer.push(DrawCommand::Circle {
+                pos: transform.pos,
+                radius: grabzone.radius,
+                color: Color::new(0, 0, 255, 50),
+            })
+        });
+
+    // render WantsToGoTo
+    <(&CTransform, &WantsToGoTo)>::query()
+        .iter(ecs)
+        .for_each(|(transform, wants_to_go_to)| {
+            render_command_buffer.push(DrawCommand::Line {
+                start: transform.pos,
+                end: wants_to_go_to.pos,
+                color: Color::new(0, 0, 255, 50),
+            })
+        });
+
     // schedule asteroid rendering
     <(&CTransform, &Asteroid)>::query()
         .iter(ecs)
@@ -83,6 +108,19 @@ pub fn entity_render(
             render_command_buffer.push(DrawCommand::Ship {
                 pos: transform.pos,
                 dir: transform.rot,
+                color: Color::GOLD,
+            });
+        });
+
+    // schedule player rendering
+    <&CTransform>::query()
+        .filter(component::<Enemy>())
+        .iter(ecs)
+        .for_each(|transform| {
+            render_command_buffer.push(DrawCommand::Ship {
+                pos: transform.pos,
+                dir: transform.rot,
+                color: Color::MAROON,
             });
         });
 
@@ -119,17 +157,6 @@ pub fn entity_render(
             }
         }
     }
-
-    // render GrabZones
-    <(&CTransform, &GrabZone)>::query()
-        .iter(ecs)
-        .for_each(|(transform, grabzone)| {
-            render_command_buffer.push(DrawCommand::Circle {
-                pos: transform.pos,
-                radius: grabzone.radius,
-                color: Color::new(0, 0, 255, 100),
-            })
-        });
 }
 
 // render system

@@ -61,3 +61,14 @@ pub struct GrabZone {
 }
 
 pub struct Attachable;
+
+pub struct WantsToGoTo {
+    pub pos: Vec2,
+}
+
+pub struct LookAt {
+    pub entity: Entity,
+}
+
+#[derive(Clone, Copy)]
+pub struct Enemy;

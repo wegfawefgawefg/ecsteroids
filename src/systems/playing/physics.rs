@@ -26,7 +26,7 @@ pub fn physics(ecs: &mut SubWorld) {
         ctransform.pos += physics.vel;
 
         let rot_matrix = glam::Mat2::from_angle(physics.rot_vel.to_radians() * 0.1);
-        ctransform.rot = rot_matrix * ctransform.rot;
+        ctransform.rot = (rot_matrix * ctransform.rot).normalize();
     }
 }
 

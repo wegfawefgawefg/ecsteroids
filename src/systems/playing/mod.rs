@@ -1,5 +1,6 @@
 pub mod attached;
 pub mod collision;
+pub mod enemy_behaviour;
 pub mod init_state;
 pub mod input_handling;
 pub mod physics;

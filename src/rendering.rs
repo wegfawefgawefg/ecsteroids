@@ -12,6 +12,7 @@ pub enum DrawCommand {
     Ship {
         pos: Vec2,
         dir: Vec2,
+        color: Color,
     },
     Asteroid {
         pos: Vec2,
@@ -56,20 +57,26 @@ pub fn execute_render_command_buffer(
             DrawCommand::ColoredSquare { pos, color } => {
                 d.draw_rectangle(pos.x as i32, pos.y as i32, SIZE, SIZE, *color);
             }
-            DrawCommand::Ship { pos, dir } => {
-                let ship_color = Color::new(0, 100, 255, 255);
+            DrawCommand::Ship { pos, dir, color } => {
                 let center = Vec2::new(pos.x, pos.y);
-                let dir = dir.normalize();
-                let dir = dir * 10.0;
-                d.draw_circle_lines(center.x as i32, center.y as i32, 3.0, ship_color);
-                d.draw_line(
-                    center.x as i32,
-                    center.y as i32,
-                    (center.x + dir.x) as i32,
-                    (center.y + dir.y) as i32,
-                    ship_color,
-                );
+
+                // Check if dir is close to zero vector
+                if dir.length() > 1e-10 {
+                    let dir = dir.normalize() * 10.0;
+                    d.draw_circle_lines(center.x as i32, center.y as i32, 3.0, color);
+                    d.draw_line(
+                        center.x as i32,
+                        center.y as i32,
+                        (center.x + dir.x) as i32,
+                        (center.y + dir.y) as i32,
+                        color,
+                    );
+                } else {
+                    // Just draw the circle without the line, or handle the case where dir is a zero vector
+                    d.draw_circle_lines(center.x as i32, center.y as i32, 3.0, color);
+                }
             }
+
             DrawCommand::Asteroid { pos, size, dir } => {
                 let mut points: Vec<Vec2> = Vec::new();
                 let base_angle = 2.0 * std::f32::consts::PI / SEGMENTS as f32;
